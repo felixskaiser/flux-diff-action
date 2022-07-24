@@ -15,8 +15,8 @@ module.exports = async ({ github, context, npmDiff, npmChalk, diffable, outputTy
                     mapping.SrcPath + ' | ' +
                     mapping.DstPath +
                     '</summary>\n\n```diff\n' +
-                    rawDiff +
-                    '```\n</details>'
+                    diff +
+                    '```\n</details>\n'
   }
 
   if (outputType === 'pr_comment') {
