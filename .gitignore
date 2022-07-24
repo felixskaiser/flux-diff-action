@@ -1,0 +1,7 @@
+.github-pat
+
+# js
+node_modules/
+
+# GitHub Super-Linter
+super-linter.log

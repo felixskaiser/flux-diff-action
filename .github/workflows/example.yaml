@@ -1,0 +1,20 @@
+name: Example
+
+on: push
+
+jobs:
+  diff-flux-kustomizations:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - id: diff_flux_kustomizations
+        uses: ./
+        with:
+          src_path: ./dummy-test-repo/clusters/production
+          dst_path: ./dummy-test-repo/clusters/staging
+          output_format: markdown
+
+      - name: Add to job summary
+        run: echo '${{ steps.diff_flux_kustomizations.outputs.diff }}' >> "$GITHUB_STEP_SUMMARY"

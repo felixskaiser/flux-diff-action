@@ -1,0 +1,23 @@
+# Basic example, test locally with https://github.com/nektos/act
+# 'act workflow_dispatch -s GITHUB_TOKEN=$(cat .github-pat)'
+# Requires GitHub PAT when run locally:
+#  https://github.com/nektos/act#github_token
+
+name: test local
+
+on: workflow_dispatch
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # need to checkout repo, or else the action cannot be found
+      - uses: actions/checkout@v3
+
+      - id: test_local
+        uses: ./
+        with:
+          src_path: ./dummy-test-repo/clusters/production
+          dst_path: ./dummy-test-repo/clusters/staging
+
+      - run: echo '${{ steps.test_local.outputs.diff }}'

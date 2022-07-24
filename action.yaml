@@ -1,0 +1,79 @@
+name: flux-diff-action
+description: Find Flux Kustomizations in two directories and get the diff between the built manifests.
+author: Felix Kaiser
+
+inputs:
+  src_path:
+    description: Path to the source directory.
+    required: true
+
+  dst_path:
+    description: Path to the destination directory.
+    required: true
+
+  output_type:
+    description: |
+      How to output the diff.
+      Default is Action output only.
+      Set to 'pr_comment' to comment diff on PR.
+      Input 'output_type: pr_comment' implies input 'output_format: markdown'.
+    required: false
+    default: ""
+
+  output_format:
+    description: |
+      The format with which to output the diff.
+      Default is colored stdout.
+      Set to 'markdown' to get output without color, prefix '```diff' and suffix '```'.
+      Input 'output_type: pr_comment' implies input 'output_format: markdown'.
+    required: false
+    default: ""
+
+outputs:
+  diff:
+    description: The diff returned by this action.
+    value: ${{ steps.get_diff.outputs.result }}
+
+runs:
+  using: composite
+  steps:
+    - id: input_to_env
+      shell: bash
+      run: |
+        echo "INPUT_SRC_PATH=${{ inputs.src_path }}" >> $GITHUB_ENV
+        echo "INPUT_DST_PATH=${{ inputs.dst_path }}" >> $GITHUB_ENV
+        echo "INPUT_OUTPUT_TYPE=${{ inputs.output_type }}" >> $GITHUB_ENV
+        echo "INPUT_OUTPUT_FORMAT=${{ inputs.output_format }}" >> $GITHUB_ENV
+
+    - id: setup_go
+      uses: actions/setup-go@v3
+      with:
+       go-version-file: ${{ env.GITHUB_ACTION_PATH }}go.mod
+
+    - id: get_diffable
+      shell: bash
+      run: |
+        diffable=$(go run $GITHUB_ACTION_PATH/get-diffable.go --src=$INPUT_SRC_PATH --dst=$INPUT_DST_PATH)
+        echo "::set-output name=result::$diffable"
+
+    - id: npm_install
+      shell: bash
+      run: npm i $GITHUB_ACTION_PATH --production
+
+    - id: get_diff
+      uses: actions/github-script@v6
+      env:
+        DIFFABLE: ${{ steps.get_diffable.outputs.result }}
+      with:
+        result-encoding: string
+        script: |
+          const npmDiff = require('diff');
+          const npmChalk = require('chalk');
+
+          const action_path = process.env.GITHUB_ACTION_PATH;
+          const diffable = process.env.DIFFABLE;
+          const outputType = process.env.INPUT_OUTPUT_TYPE;
+          const outputFormat = process.env.INPUT_OUTPUT_FORMAT;
+
+          const script = require(action_path + 'comment-diff.js');
+          return await script({github, context, npmDiff, npmChalk, diffable, outputType, outputFormat});
