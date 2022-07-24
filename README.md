@@ -2,7 +2,7 @@
 
 [![GitHub Super-Linter](https://github.com/felixskaiser/flux-diff-action/workflows/GitHub%20Super-Linter/badge.svg)](https://github.com/marketplace/actions/super-linter) [![Example](https://github.com/felixskaiser/flux-diff-action/workflows/Example/badge.svg)](https://github.com/felixskaiser/flux-diff-action/actions/workflows/example.yaml)
 
-Find [Flux2](https://fluxcd.io/docs/) [Kustomizations](https://fluxcd.io/docs/components/kustomize/kustomization/) in two directories and get the diff between the built manifests.
+A [GitHub Action](https://docs.github.com/en/actions) to find [Flux2](https://fluxcd.io/docs/) [Kustomizations](https://fluxcd.io/docs/components/kustomize/kustomization/) in two directories and get the diff between the built manifests.
 
 ## Usage Examples
 
