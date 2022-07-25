@@ -57,7 +57,8 @@ runs:
     - id: get_diffable
       shell: bash
       run: |
-        diffable=$(go run -modfile=$ACTION_PATH/go.mod $ACTION_PATH/get-diffable.go --src=$INPUT_SRC_PATH --dst=$INPUT_DST_PATH)
+        cd $ACTION_PATH
+        diffable=$(go run get-diffable.go --src=$INPUT_SRC_PATH --dst=$INPUT_DST_PATH)
         echo "::set-output name=result::$diffable"
 
     - id: npm_install
