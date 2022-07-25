@@ -34,16 +34,14 @@ import (
 )
 
 var (
-	srcDir  string
-	dstDir  string
-	workDir string
+	srcDir string
+	dstDir string
 )
 
 // go run get-diffable.go --src=dummy-test-repo/clusters/production --dst=dummy-test-repo/clusters/staging
 func main() {
 	flag.StringVar(&srcDir, "src", "", "Path to the source directory.")
 	flag.StringVar(&dstDir, "dst", "", "Path to the destination directory.")
-	flag.StringVar(&workDir, "workDir", "", "Path to the working directory.")
 	flag.Parse()
 
 	if srcDir == "" {
@@ -54,7 +52,7 @@ func main() {
 		log.Fatal("flag 'dst' must not be empty")
 	}
 
-	d, err := FindBuildAll(srcDir, dstDir, workDir)
+	d, err := FindBuildAll(srcDir, dstDir)
 	if err != nil {
 		log.Fatalf("error finding and building all Flux Kustomizations: %s", err)
 	}
@@ -93,26 +91,23 @@ type fluxKust struct {
 	sourcePath string
 }
 
-func FindBuildAll(srcDir, dstDir, workDir string) (DiffableList, error) {
+func FindBuildAll(srcDir, dstDir string) (DiffableList, error) {
 	var d DiffableList
 
-	c, err := compare(srcDir, dstDir, workDir)
+	c, err := compare(srcDir, dstDir)
 	if err != nil {
 		return d, fmt.Errorf("error finding and building Flux Kustomizations: %v", err)
 	}
 
 	for _, item := range c.items {
-		srcKustPath := workDir
-		dstKustPath := workDir
+		var srcKustPath, dstKustPath string
 
 		if item.src.kustPath != "" {
-			srcKustPath = filepath.Join(srcKustPath, item.src.kustPath)
-			log.Printf("DEBUG: found srcKustPath: %s", srcKustPath)
+			srcKustPath = item.src.kustPath
 		}
 
 		if item.dst.kustPath != "" {
-			dstKustPath = filepath.Join(dstKustPath, item.dst.kustPath)
-			log.Printf("DEBUG: found dstKustPath: %s", dstKustPath)
+			dstKustPath = item.dst.kustPath
 		}
 
 		srcYaml, err := kustomizeBuild(srcKustPath)
@@ -136,16 +131,16 @@ func FindBuildAll(srcDir, dstDir, workDir string) (DiffableList, error) {
 	return d, nil
 }
 
-func compare(srcDir, dstDir, workDir string) (comparisonList, error) {
+func compare(srcDir, dstDir string) (comparisonList, error) {
 	//TODO: also handle target namespace?
 	var c comparisonList
 
-	srcKusts, err := findInDir(srcDir, workDir)
+	srcKusts, err := findInDir(srcDir)
 	if err != nil {
 		return c, fmt.Errorf("error comparing directories: %v", err)
 	}
 
-	dstKusts, err := findInDir(dstDir, workDir)
+	dstKusts, err := findInDir(dstDir)
 	if err != nil {
 		return c, fmt.Errorf("error comparing directories: %v", err)
 	}
@@ -182,10 +177,10 @@ func compare(srcDir, dstDir, workDir string) (comparisonList, error) {
 	return c, nil
 }
 
-func findInDir(dirPath, workDir string) (map[string]fluxKust, error) {
+func findInDir(dirPath string) (map[string]fluxKust, error) {
 	fMap := make(map[string]fluxKust)
 
-	err := filepath.WalkDir(filepath.Join(workDir, dirPath), func(p string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(dirPath, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return fmt.Errorf("error finding Flux Kustomizations in directory: %v", err)
 		}
