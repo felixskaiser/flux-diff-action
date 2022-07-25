@@ -1,10 +1,13 @@
-# flux-diff-action
+# Diff Flux Kustomizations
 
-[![GitHub Super-Linter](https://github.com/felixskaiser/flux-diff-action/workflows/GitHub%20Super-Linter/badge.svg)](https://github.com/marketplace/actions/super-linter) [![Example](https://github.com/felixskaiser/flux-diff-action/workflows/Example/badge.svg)](https://github.com/felixskaiser/flux-diff-action/actions/workflows/example.yaml)
+[![GitHub Super-Linter](https://github.com/felixskaiser/flux-diff-action/workflows/GitHub%20Super-Linter/badge.svg)](https://github.com/marketplace/actions/super-linter)
+[![Example](https://github.com/felixskaiser/flux-diff-action/workflows/Example/badge.svg)](https://github.com/felixskaiser/flux-diff-action/actions/workflows/example.yaml)
 
 A [GitHub Action](https://docs.github.com/en/actions) to find [Flux2](https://fluxcd.io/docs/) [Kustomizations](https://fluxcd.io/docs/components/kustomize/kustomization/) in two directories and get the diff between the built manifests.
 
 ## Usage Examples
+
+Check out the live [example workflow](https://github.com/felixskaiser/flux-diff-action/actions/workflows/example.yaml).
 
 ### `on: push` with Job Summary
 
@@ -80,13 +83,11 @@ jobs:
 
   Default is Action output only. Set to `pr_comment` to comment diff on PR.
 
-  Input `output_type: pr_comment` implies input `output_format: markdown`.
+  **PR comment**: The PR to comment is derived automatically from workflow context. The PR comment will be in Markdown format (as if `output_format` was set to `markdown`).
 
 - `output_format` - (optional) The format with which to output the diff.
 
   Default is colored stdout. Set to `markdown` to get output without color, prefix \`\`\`diff and suffix \`\`\`.
-
-  Input `output_type: pr_comment` implies input `output_format: markdown`.
 
 ## Outputs
 
