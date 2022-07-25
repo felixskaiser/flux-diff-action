@@ -34,14 +34,16 @@ import (
 )
 
 var (
-	srcDir string
-	dstDir string
+	srcDir  string
+	dstDir  string
+	workDir string
 )
 
 // go run get-diffable.go --src=dummy-test-repo/clusters/production --dst=dummy-test-repo/clusters/staging
 func main() {
 	flag.StringVar(&srcDir, "src", "", "Path to the source directory.")
 	flag.StringVar(&dstDir, "dst", "", "Path to the destination directory.")
+	flag.StringVar(&workDir, "workDir", "", "Path to the working directory.")
 	flag.Parse()
 
 	if srcDir == "" {
@@ -52,7 +54,7 @@ func main() {
 		log.Fatal("flag 'dst' must not be empty")
 	}
 
-	d, err := FindBuildAll(srcDir, dstDir)
+	d, err := FindBuildAll(srcDir, dstDir, workDir)
 	if err != nil {
 		log.Fatalf("error finding and building all Flux Kustomizations: %s", err)
 	}
@@ -91,7 +93,7 @@ type fluxKust struct {
 	sourcePath string
 }
 
-func FindBuildAll(srcDir, dstDir string) (DiffableList, error) {
+func FindBuildAll(srcDir, dstDir, workDir string) (DiffableList, error) {
 	var d DiffableList
 
 	c, err := compare(srcDir, dstDir)
@@ -100,14 +102,15 @@ func FindBuildAll(srcDir, dstDir string) (DiffableList, error) {
 	}
 
 	for _, item := range c.items {
-		var srcKustPath, dstKustPath string
+		srcKustPath := workDir
+		dstKustPath := workDir
 
 		if item.src.kustPath != "" {
-			srcKustPath = item.src.kustPath
+			srcKustPath = filepath.Join(srcKustPath, item.src.kustPath)
 		}
 
 		if item.dst.kustPath != "" {
-			dstKustPath = item.dst.kustPath
+			dstKustPath = filepath.Join(dstKustPath, item.dst.kustPath)
 		}
 
 		srcYaml, err := kustomizeBuild(srcKustPath)

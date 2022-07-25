@@ -43,6 +43,7 @@ runs:
     - id: input_to_env
       shell: bash
       run: |
+        echo "WORK_DIR=$(pwd)" >> $GITHUB_ENV
         echo "ACTION_PATH=${{ github.action_path }}" >> $GITHUB_ENV
         echo "INPUT_SRC_PATH=$(readlink -f ${{ inputs.src_path }})" >> $GITHUB_ENV
         echo "INPUT_DST_PATH=$(readlink -f ${{ inputs.dst_path }})" >> $GITHUB_ENV
@@ -58,7 +59,7 @@ runs:
       shell: bash
       run: |
         cd $ACTION_PATH
-        diffable=$(go run get-diffable.go --src=$INPUT_SRC_PATH --dst=$INPUT_DST_PATH)
+        diffable=$(go run get-diffable.go --src=$INPUT_SRC_PATH --dst=$INPUT_DST_PATH --workDir=$WORK_DIR)
         echo "::set-output name=result::$diffable"
 
     - id: npm_install
