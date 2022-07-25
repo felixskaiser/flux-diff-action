@@ -38,7 +38,7 @@ var (
 	dstDir string
 )
 
-// go run get-diffable.go --src=./test/clusters/a --dst=./test/clusters/b
+// go run get-diffable.go --src=dummy-test-repo/clusters/production --dst=dummy-test-repo/clusters/staging
 func main() {
 	flag.StringVar(&srcDir, "src", "", "Path to the source directory.")
 	flag.StringVar(&dstDir, "dst", "", "Path to the destination directory.")
@@ -66,14 +66,14 @@ func main() {
 }
 
 type DiffableList struct {
-	Mappings []Diffable
+	Mappings []Diffable `json:"mappings"`
 }
 
 type Diffable struct {
-	SrcPath    string
-	DstPath    string
-	SrcContent string
-	DstContent string
+	SrcPath    string `json:"srcPath"`
+	DstPath    string `json:"dstPath"`
+	SrcContent string `json:"srcContent"`
+	DstContent string `json:"dstContent"`
 }
 
 type comparisonList struct {
