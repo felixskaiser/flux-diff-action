@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Diff Flux Kustomizations
-        uses: felixskaiser/flux-diff-action@{{ github.head_ref }}
+        uses: felixskaiser/flux-diff-action@${{ github.head_ref }}
         with:
           src_path: ./dummy-test-repo/clusters/production
           dst_path: ./dummy-test-repo/clusters/staging
