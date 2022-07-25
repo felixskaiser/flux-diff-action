@@ -96,7 +96,7 @@ func FindBuildAll(srcDir, dstDir string) (DiffableList, error) {
 
 	c, err := compare(srcDir, dstDir)
 	if err != nil {
-		return d, err
+		return d, fmt.Errorf("error finding and building Flux Kustomizations: %v", err)
 	}
 
 	for _, item := range c.items {
@@ -112,12 +112,12 @@ func FindBuildAll(srcDir, dstDir string) (DiffableList, error) {
 
 		srcYaml, err := kustomizeBuild(srcKustPath)
 		if err != nil {
-			return d, err
+			return d, fmt.Errorf("error finding and building Flux Kustomizations: %v", err)
 		}
 
 		dstYaml, err := kustomizeBuild(dstKustPath)
 		if err != nil {
-			return d, err
+			return d, fmt.Errorf("error finding and building Flux Kustomizations: %v", err)
 		}
 
 		d.Mappings = append(d.Mappings, Diffable{
@@ -137,12 +137,12 @@ func compare(srcDir, dstDir string) (comparisonList, error) {
 
 	srcKusts, err := findInDir(srcDir)
 	if err != nil {
-		return c, err
+		return c, fmt.Errorf("error comparing directories: %v", err)
 	}
 
 	dstKusts, err := findInDir(dstDir)
 	if err != nil {
-		return c, err
+		return c, fmt.Errorf("error comparing directories: %v", err)
 	}
 
 	// TODO: break if namespace/name combinations are not uniqe per dir/cluster
@@ -182,7 +182,7 @@ func findInDir(dirPath string) (map[string]fluxKust, error) {
 
 	err := filepath.WalkDir(dirPath, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return err
+			return fmt.Errorf("error finding Flux Kustomizations in directory: %v", err)
 		}
 
 		re := regexp.MustCompile(`\.ya?ml`)
@@ -194,7 +194,7 @@ func findInDir(dirPath string) (map[string]fluxKust, error) {
 
 		fileContent, err := os.ReadFile(p)
 		if err != nil {
-			return err
+			return fmt.Errorf("error reading file: %v", err)
 		}
 
 		var v1beta2K v1beta2.Kustomization
@@ -235,12 +235,12 @@ func kustomizeBuild(dirPath string) (string, error) {
 
 	resMap, err := kustomizer.Run(fs, dirPath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error performing kustomization: %v", err)
 	}
 
 	resYaml, err := resMap.AsYaml()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error returning resource as yaml: %v", err)
 	}
 
 	return string(resYaml), nil
