@@ -45,8 +45,8 @@ runs:
       run: |
         echo "WORK_DIR=$(pwd)" >> $GITHUB_ENV
         echo "ACTION_PATH=${{ github.action_path }}" >> $GITHUB_ENV
-        echo "INPUT_SRC_PATH=$(readlink -f ${{ inputs.src_path }})" >> $GITHUB_ENV
-        echo "INPUT_DST_PATH=$(readlink -f ${{ inputs.dst_path }})" >> $GITHUB_ENV
+        echo "INPUT_SRC_PATH=${{ inputs.src_path }}" >> $GITHUB_ENV
+        echo "INPUT_DST_PATH=${{ inputs.dst_path }}" >> $GITHUB_ENV
         echo "INPUT_OUTPUT_TYPE=${{ inputs.output_type }}" >> $GITHUB_ENV
         echo "INPUT_OUTPUT_FORMAT=${{ inputs.output_format }}" >> $GITHUB_ENV
 

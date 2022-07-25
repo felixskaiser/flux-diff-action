@@ -107,10 +107,12 @@ func FindBuildAll(srcDir, dstDir, workDir string) (DiffableList, error) {
 
 		if item.src.kustPath != "" {
 			srcKustPath = filepath.Join(srcKustPath, item.src.kustPath)
+			log.Printf("DEBUG: found srcKustPath: %s", srcKustPath)
 		}
 
 		if item.dst.kustPath != "" {
 			dstKustPath = filepath.Join(dstKustPath, item.dst.kustPath)
+			log.Printf("DEBUG: found dstKustPath: %s", dstKustPath)
 		}
 
 		srcYaml, err := kustomizeBuild(srcKustPath)
