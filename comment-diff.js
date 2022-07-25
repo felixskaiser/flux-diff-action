@@ -3,7 +3,7 @@ module.exports = async ({ github, context, npmDiff, npmChalk, diffable, outputTy
   let rawDiff = ''
   let markdownDiff = '### Flux Kustomization diffs\n\n'
 
-  //TODO: don't output empty diffs
+  // TODO: don't output empty diffs
   for (const mapping of d.mappings) {
     const diff = npmDiff.createTwoFilesPatch(
       mapping.srcPath,
