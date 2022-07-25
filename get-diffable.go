@@ -96,7 +96,7 @@ type fluxKust struct {
 func FindBuildAll(srcDir, dstDir, workDir string) (DiffableList, error) {
 	var d DiffableList
 
-	c, err := compare(srcDir, dstDir)
+	c, err := compare(srcDir, dstDir, workDir)
 	if err != nil {
 		return d, fmt.Errorf("error finding and building Flux Kustomizations: %v", err)
 	}
@@ -136,16 +136,16 @@ func FindBuildAll(srcDir, dstDir, workDir string) (DiffableList, error) {
 	return d, nil
 }
 
-func compare(srcDir, dstDir string) (comparisonList, error) {
+func compare(srcDir, dstDir, workDir string) (comparisonList, error) {
 	//TODO: also handle target namespace?
 	var c comparisonList
 
-	srcKusts, err := findInDir(srcDir)
+	srcKusts, err := findInDir(srcDir, workDir)
 	if err != nil {
 		return c, fmt.Errorf("error comparing directories: %v", err)
 	}
 
-	dstKusts, err := findInDir(dstDir)
+	dstKusts, err := findInDir(dstDir, workDir)
 	if err != nil {
 		return c, fmt.Errorf("error comparing directories: %v", err)
 	}
@@ -182,10 +182,10 @@ func compare(srcDir, dstDir string) (comparisonList, error) {
 	return c, nil
 }
 
-func findInDir(dirPath string) (map[string]fluxKust, error) {
+func findInDir(dirPath, workDir string) (map[string]fluxKust, error) {
 	fMap := make(map[string]fluxKust)
 
-	err := filepath.WalkDir(dirPath, func(p string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(filepath.Join(workDir, dirPath), func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return fmt.Errorf("error finding Flux Kustomizations in directory: %v", err)
 		}
