@@ -1,9 +1,9 @@
 module.exports = async ({ github, context, npmDiff, npmChalk, diffable, outputType, outputFormat }) => {
   const d = JSON.parse(diffable)
-  let rawDiff = ''
-  let markdownDiff = '### Flux Kustomization diffs\n\n'
 
-  // TODO: don't output empty diffs
+  let rawDiff = ''
+  let markdownDiff = ''
+
   for (const mapping of d.mappings) {
     const diff = npmDiff.createTwoFilesPatch(
       mapping.srcPath,
@@ -11,26 +11,39 @@ module.exports = async ({ github, context, npmDiff, npmChalk, diffable, outputTy
       mapping.srcContent,
       mapping.dstContent
     )
-    rawDiff += diff
-    markdownDiff += '<details>\n  <summary>diff: ' +
-                    mapping.srcPath + ' | ' +
-                    mapping.dstPath +
-                    '</summary>\n\n```diff\n' +
-                    diff +
-                    '```\n</details>\n'
+
+    const emptyDiff = '===================================================================\n' + 
+                      '--- ' + mapping.srcPath + '\n' +
+                      '+++ ' + mapping.dstPath + '\n'
+
+    if (diff !== emptyDiff) {
+      rawDiff += diff
+      markdownDiff += '<details>\n  <summary>diff: ' +
+                      mapping.srcPath + ' | ' +
+                      mapping.dstPath +
+                      '</summary>\n\n```diff\n' +
+                      diff +
+                      '```\n</details>\n'
+    }
   }
 
-  if (outputType === 'pr_comment') {
+  const markdownDiffWithHeader = '### Flux Kustomization diffs\n\n' + markdownDiff
+
+  if (outputType === 'pr_comment' && markdownDiff !== '') {
     github.rest.issues.createComment({
       issue_number: context.issue.number,
       owner: context.repo.owner,
       repo: context.repo.repo,
-      body: markdownDiff
+      body: markdownDiffWithHeader
     })
   }
 
   if (outputFormat === 'markdown') {
-    return markdownDiff
+    if (markdownDiff === '') {
+      return ''
+    }
+
+    return markdownDiffWithHeader
   }
 
   const colorizedDiff = colorizeDiff(rawDiff, npmChalk)
@@ -39,6 +52,10 @@ module.exports = async ({ github, context, npmDiff, npmChalk, diffable, outputTy
 }
 
 function colorizeDiff (rawDiffStr, chalk) {
+  if (rawDiffStr === '') {
+    return ''
+  }
+
   const chalkBasicColor = new chalk.Instance({ level: 1 })
   const rawDiffArr = rawDiffStr.split(/\r?\n/)
 
