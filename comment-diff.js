@@ -1,10 +1,35 @@
 module.exports = async ({ github, context, npmDiff, npmChalk, diffable, outputType, outputFormat }) => {
   const d = JSON.parse(diffable)
 
+  const diff = makeDiff(npmDiff, d)
+
+  const markdownDiffWithHeader = '### Flux Kustomization diffs\n\n' + diff[1]
+
+  if (outputType === 'pr_comment' && diff[1] !== '') {
+    github.rest.issues.createComment({
+      issue_number: context.issue.number,
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      body: markdownDiffWithHeader
+    })
+  }
+
+  if (outputFormat === 'markdown') {
+    if (diff[1] === '') {
+      return ''
+    }
+
+    return markdownDiffWithHeader
+  }
+
+  return colorizeDiff(diff[0], npmChalk)
+}
+
+function makeDiff (npmDiff, diffable) {
   let rawDiff = ''
   let markdownDiff = ''
 
-  for (const mapping of d.mappings) {
+  for (const mapping of diffable.mappings) {
     const diff = npmDiff.createTwoFilesPatch(
       mapping.srcPath,
       mapping.dstPath,
@@ -12,7 +37,7 @@ module.exports = async ({ github, context, npmDiff, npmChalk, diffable, outputTy
       mapping.dstContent
     )
 
-    const emptyDiff = '===================================================================\n' + 
+    const emptyDiff = '===================================================================\n' +
                       '--- ' + mapping.srcPath + '\n' +
                       '+++ ' + mapping.dstPath + '\n'
 
@@ -27,28 +52,7 @@ module.exports = async ({ github, context, npmDiff, npmChalk, diffable, outputTy
     }
   }
 
-  const markdownDiffWithHeader = '### Flux Kustomization diffs\n\n' + markdownDiff
-
-  if (outputType === 'pr_comment' && markdownDiff !== '') {
-    github.rest.issues.createComment({
-      issue_number: context.issue.number,
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      body: markdownDiffWithHeader
-    })
-  }
-
-  if (outputFormat === 'markdown') {
-    if (markdownDiff === '') {
-      return ''
-    }
-
-    return markdownDiffWithHeader
-  }
-
-  const colorizedDiff = colorizeDiff(rawDiff, npmChalk)
-
-  return colorizedDiff
+  return [rawDiff, markdownDiff]
 }
 
 function colorizeDiff (rawDiffStr, chalk) {
