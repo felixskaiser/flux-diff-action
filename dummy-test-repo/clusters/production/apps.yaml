@@ -11,4 +11,3 @@ spec:
   path: ./dummy-test-repo/apps/production
   prune: true
   timeout: 2m
-  
