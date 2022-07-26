@@ -25,6 +25,8 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - run: echo ${{ runner }}
+
       - name: Go build
         run: go build -ldflags="-w -s" -o bin/get-diffable .
 
