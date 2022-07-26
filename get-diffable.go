@@ -214,7 +214,7 @@ func makeMapRec(srcKusts, dstKusts []fluxKust, depth int) (map[string]fluxKust, 
 
 		if _, ok := srcMap[key]; ok {
 			log.Printf("DEBUG: key %s already in map", key)
-			depth += 1
+			depth++
 			return makeMapRec(srcKusts, dstKusts, depth)
 		}
 		srcMap[key] = kust
@@ -228,7 +228,7 @@ func makeMapRec(srcKusts, dstKusts []fluxKust, depth int) (map[string]fluxKust, 
 
 		if _, ok := dstMap[key]; ok {
 			log.Printf("DEBUG: key %s already in map", key)
-			depth += 1
+			depth++
 			return makeMapRec(srcKusts, dstKusts, depth)
 		}
 		dstMap[key] = kust
