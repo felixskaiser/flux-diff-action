@@ -26,7 +26,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Go build
-        run: go build -o bin/get-diffable .
+        run: go build -ldflags="-w -s" -o bin/get-diffable .
 
       - name: Commit changes
         uses: stefanzweifel/git-auto-commit-action@v4
