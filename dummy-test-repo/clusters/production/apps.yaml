@@ -5,9 +5,10 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./dummy-test-repo/apps/production
   sourceRef:
     kind: GitRepository
     name: flux-system
-  timeout: 2m
+  path: ./dummy-test-repo/apps/production
   prune: true
+  timeout: 2m
+  
