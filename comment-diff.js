@@ -13,8 +13,8 @@ module.exports = async ({ github, context, npmDiff, npmChalk, diffable, outputTy
     )
     rawDiff += diff
     markdownDiff += '<details>\n  <summary>diff: ' +
-                    mapping.SrcPath + ' | ' +
-                    mapping.DstPath +
+                    mapping.srcPath + ' | ' +
+                    mapping.dstPath +
                     '</summary>\n\n```diff\n' +
                     diff +
                     '```\n</details>\n'

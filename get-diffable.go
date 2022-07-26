@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/fluxcd/kustomize-controller/api/v1beta1"
 	"github.com/fluxcd/kustomize-controller/api/v1beta2"
@@ -52,7 +53,7 @@ func main() {
 		log.Fatal("flag 'dst' must not be empty")
 	}
 
-	d, err := FindBuildAll(srcDir, dstDir)
+	d, err := findBuildAll(srcDir, dstDir)
 	if err != nil {
 		log.Fatalf("error finding and building all Flux Kustomizations: %s", err)
 	}
@@ -87,14 +88,15 @@ type comparison struct {
 }
 
 type fluxKust struct {
+	fullName   string
 	kustPath   string
 	sourcePath string
 }
 
-func FindBuildAll(srcDir, dstDir string) (DiffableList, error) {
+func findBuildAll(srcDir, dstDir string) (DiffableList, error) {
 	var d DiffableList
 
-	c, err := compare(srcDir, dstDir)
+	c, err := compareDirs(srcDir, dstDir)
 	if err != nil {
 		return d, fmt.Errorf("error finding and building Flux Kustomizations: %v", err)
 	}
@@ -131,54 +133,27 @@ func FindBuildAll(srcDir, dstDir string) (DiffableList, error) {
 	return d, nil
 }
 
-func compare(srcDir, dstDir string) (comparisonList, error) {
-	//TODO: also handle target namespace?
-	var c comparisonList
-
+func compareDirs(srcDir, dstDir string) (comparisonList, error) {
 	srcKusts, err := findInDir(srcDir)
 	if err != nil {
-		return c, fmt.Errorf("error comparing directories: %v", err)
+		return comparisonList{}, fmt.Errorf("error comparing directories: %v", err)
 	}
 
 	dstKusts, err := findInDir(dstDir)
 	if err != nil {
-		return c, fmt.Errorf("error comparing directories: %v", err)
+		return comparisonList{}, fmt.Errorf("error comparing directories: %v", err)
 	}
 
-	// TODO: break if namespace/name combinations are not uniqe per dir/cluster
-	// compare src against dst
-	for k, srcV := range srcKusts {
-		if dstV, ok := dstKusts[k]; ok {
-			c.items = append(c.items, comparison{
-				name: k,
-				src:  srcV,
-				dst:  dstV,
-			})
-		} else {
-			c.items = append(c.items, comparison{
-				name: k,
-				src:  srcV,
-				dst:  fluxKust{},
-			})
-		}
+	srcMap, dstMap, err := makeMapRec(srcKusts, dstKusts, 0)
+	if err != nil {
+		return comparisonList{}, fmt.Errorf("error comparing directories: %v", err)
 	}
 
-	// compare remainder of dst against src
-	for k, dstV := range dstKusts {
-		if _, ok := srcKusts[k]; !ok {
-			c.items = append(c.items, comparison{
-				name: k,
-				src:  fluxKust{},
-				dst:  dstV,
-			})
-		}
-	}
-
-	return c, nil
+	return compareMaps(srcMap, dstMap), nil
 }
 
-func findInDir(dirPath string) (map[string]fluxKust, error) {
-	fMap := make(map[string]fluxKust)
+func findInDir(dirPath string) ([]fluxKust, error) {
+	fk := []fluxKust{}
 
 	err := filepath.WalkDir(dirPath, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -197,32 +172,117 @@ func findInDir(dirPath string) (map[string]fluxKust, error) {
 			return fmt.Errorf("error reading file: %v", err)
 		}
 
+		//TODO: also handle target namespace?
 		var v1beta2K v1beta2.Kustomization
-		err = yaml.Unmarshal(fileContent, &v1beta2K)
-		if err == nil {
-			fMap[fmt.Sprintf("%s/%s", v1beta2K.Namespace, v1beta2K.Name)] = fluxKust{
+		err = yaml.UnmarshalStrict(fileContent, &v1beta2K)
+		if err == nil && v1beta2K.TypeMeta.Kind == "Kustomization" && v1beta2K.TypeMeta.APIVersion == "kustomize.toolkit.fluxcd.io/v1beta2" {
+			fk = append(fk, fluxKust{
+				fullName:   fmt.Sprintf("%s/%s", v1beta2K.ObjectMeta.Namespace, v1beta2K.ObjectMeta.Name),
 				kustPath:   v1beta2K.Spec.Path, //TODO: handle 'None'
 				sourcePath: p,
-			}
-
+			})
 			return nil
 		}
 
+		//TODO: also handle target namespace?
 		var v1beta1K v1beta1.Kustomization
-		err = yaml.Unmarshal(fileContent, &v1beta1K)
-		if err == nil {
-			fMap[fmt.Sprintf("%s/%s", v1beta1K.Namespace, v1beta1K.Name)] = fluxKust{
+		err = yaml.UnmarshalStrict(fileContent, &v1beta1K)
+		if err == nil && v1beta1K.TypeMeta.Kind == "Kustomization" && v1beta1K.TypeMeta.APIVersion == "kustomize.toolkit.fluxcd.io/v1beta1" {
+			fk = append(fk, fluxKust{
+				fullName:   fmt.Sprintf("%s/%s", v1beta1K.ObjectMeta.Namespace, v1beta1K.ObjectMeta.Name),
 				kustPath:   v1beta1K.Spec.Path, //TODO: handle 'None'
 				sourcePath: p,
-			}
-
+			})
 			return nil
 		}
 
 		return nil
 	})
 
-	return fMap, err
+	return fk, err
+}
+
+func makeMapRec(srcKusts, dstKusts []fluxKust, depth int) (map[string]fluxKust, map[string]fluxKust, error) {
+	srcMap := make(map[string]fluxKust)
+	dstMap := make(map[string]fluxKust)
+
+	for _, kust := range srcKusts {
+		key, err := makeUniqueKey(kust, depth)
+		if err != nil {
+			return srcMap, dstMap, fmt.Errorf("cannot make map with unique keys: %v", err)
+		}
+
+		if _, ok := srcMap[key]; ok {
+			log.Printf("DEBUG: key %s already in map", key)
+			depth += 1
+			return makeMapRec(srcKusts, dstKusts, depth)
+		}
+		srcMap[key] = kust
+	}
+
+	for _, kust := range dstKusts {
+		key, err := makeUniqueKey(kust, depth)
+		if err != nil {
+			return srcMap, dstMap, fmt.Errorf("cannot make map with unique keys: %v", err)
+		}
+
+		if _, ok := dstMap[key]; ok {
+			log.Printf("DEBUG: key %s already in map", key)
+			depth += 1
+			return makeMapRec(srcKusts, dstKusts, depth)
+		}
+		dstMap[key] = kust
+	}
+
+	return srcMap, dstMap, nil
+}
+
+func makeUniqueKey(kust fluxKust, depth int) (string, error) {
+	splitPath := strings.Split(kust.sourcePath, "/")
+	if (depth + 1) >= len(splitPath) {
+		return "", fmt.Errorf("kustomization %s at %s is not unique", kust.fullName, kust.sourcePath)
+	}
+
+	pathParts := splitPath[len(splitPath)-(depth+1) : len(splitPath)-1]
+	keyPrefix := strings.Join(pathParts, "_")
+
+	//TODO: also use kustPath
+
+	return fmt.Sprintf("%s_%s", keyPrefix, kust.fullName), nil
+}
+
+func compareMaps(srcMap, dstMap map[string]fluxKust) comparisonList {
+	var c comparisonList
+
+	// compare src against dst
+	for k, srcV := range srcMap {
+		if dstV, ok := dstMap[k]; ok {
+			c.items = append(c.items, comparison{
+				name: k,
+				src:  srcV,
+				dst:  dstV,
+			})
+		} else {
+			c.items = append(c.items, comparison{
+				name: k,
+				src:  srcV,
+				dst:  fluxKust{},
+			})
+		}
+	}
+
+	// compare remainder of dst against src
+	for k, dstV := range dstMap {
+		if _, ok := srcMap[k]; !ok {
+			c.items = append(c.items, comparison{
+				name: k,
+				src:  fluxKust{},
+				dst:  dstV,
+			})
+		}
+	}
+
+	return c
 }
 
 func kustomizeBuild(dirPath string) (string, error) {
