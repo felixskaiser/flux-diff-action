@@ -9,6 +9,7 @@ on:
       - 'go.mod'
       - 'go.sum'
       - 'bin/get-diffable'
+      - 'build-go-bin-non-main.yaml'
 
 jobs:
   build:
@@ -24,11 +25,12 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version-file: go.mod
-
-      - run: echo ${{ runner }}
+      
+      - name: Get go env
+        run: go env
 
       - name: Go build
-        run: go build -ldflags="-w -s" -o bin/get-diffable .
+        run: GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o bin/get-diffable .
 
       - name: Commit changes
         uses: stefanzweifel/git-auto-commit-action@v4
