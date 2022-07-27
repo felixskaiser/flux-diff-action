@@ -66,13 +66,13 @@ runs:
       with:
         result-encoding: string
         script: |
-          const npmDiff = require('diff');
-          const npmChalk = require('chalk');
+          const action_path = process.env.ACTION_PATH
+          const diffable = process.env.DIFFABLE
+          const outputType = process.env.INPUT_OUTPUT_TYPE
+          const outputFormat = process.env.INPUT_OUTPUT_FORMAT
 
-          const action_path = process.env.ACTION_PATH;
-          const diffable = process.env.DIFFABLE;
-          const outputType = process.env.INPUT_OUTPUT_TYPE;
-          const outputFormat = process.env.INPUT_OUTPUT_FORMAT;
+          const npmDiff = require(action_path + '/node_modules/diff')
+          const npmChalk = require(action_path + '/node_modules/chalk')
+          const script = require(action_path + '/comment-diff.js')
 
-          const script = require(action_path + '/comment-diff.js');
-          return await script({github, context, npmDiff, npmChalk, diffable, outputType, outputFormat});
+          return await script({github, context, npmDiff, npmChalk, diffable, outputType, outputFormat})
