@@ -17,9 +17,7 @@ module.exports = async ({ github, context, npmCore, npmDiff, npmChalk, diffable,
   }
 
   if (outputType === 'job_summary' && diff[1] !== '') {
-    await npmCore.summary
-    .this.addRaw(markdownDiffWithHeader).addEOL()
-    .write()
+    await npmCore.summary.addRaw(markdownDiffWithHeader).addEOL().write()
 
     return colorizeDiff(diff[0], npmChalk)
   }
