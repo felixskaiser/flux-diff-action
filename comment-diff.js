@@ -6,7 +6,7 @@ module.exports = async ({ github, context, npmDiff, npmChalk, diffable, outputTy
   const markdownDiffWithHeader = '### Flux Kustomization diffs\n\n' + diff[1]
 
   if (outputType === 'pr_comment' && diff[1] !== '') {
-    github.rest.issues.createComment({
+    await github.rest.issues.createComment({
       issue_number: context.issue.number,
       owner: context.repo.owner,
       repo: context.repo.repo,
