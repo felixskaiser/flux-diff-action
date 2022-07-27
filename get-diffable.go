@@ -112,12 +112,12 @@ func findBuildAll(srcDir, dstDir string) (DiffableList, error) {
 			dstKustPath = item.dst.kustPath
 		}
 
-		srcYaml, err := kustomizeBuild(srcKustPath)
+		srcYaml, err := kustomizeBuild(filepath.Join(srcDir, srcKustPath))
 		if err != nil {
 			return d, fmt.Errorf("error finding and building Flux Kustomizations: %v", err)
 		}
 
-		dstYaml, err := kustomizeBuild(dstKustPath)
+		dstYaml, err := kustomizeBuild(filepath.Join(dstDir, dstKustPath))
 		if err != nil {
 			return d, fmt.Errorf("error finding and building Flux Kustomizations: %v", err)
 		}
