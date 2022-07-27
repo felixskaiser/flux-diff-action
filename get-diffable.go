@@ -37,6 +37,8 @@ import (
 var (
 	srcDir string
 	dstDir string
+	// Initially assume input paths are not relative to repo root
+	pathRelToRepoRoot = false
 )
 
 // go run get-diffable.go --src=dummy-test-repo/clusters/production --dst=dummy-test-repo/clusters/staging
@@ -112,12 +114,12 @@ func findBuildAll(srcDir, dstDir string) (DiffableList, error) {
 			dstKustPath = item.dst.kustPath
 		}
 
-		srcYaml, err := kustomizeBuild(filepath.Join(srcDir, srcKustPath))
+		srcYaml, err := kustomizeBuild(srcDir, srcKustPath)
 		if err != nil {
 			return d, fmt.Errorf("error finding and building Flux Kustomizations: %v", err)
 		}
 
-		dstYaml, err := kustomizeBuild(filepath.Join(dstDir, dstKustPath))
+		dstYaml, err := kustomizeBuild(dstDir, dstKustPath)
 		if err != nil {
 			return d, fmt.Errorf("error finding and building Flux Kustomizations: %v", err)
 		}
@@ -134,12 +136,12 @@ func findBuildAll(srcDir, dstDir string) (DiffableList, error) {
 }
 
 func compareDirs(srcDir, dstDir string) (comparisonList, error) {
-	srcKusts, err := findInDir(srcDir)
+	srcKusts, err := findKustInDir(srcDir)
 	if err != nil {
 		return comparisonList{}, fmt.Errorf("error comparing directories: %v", err)
 	}
 
-	dstKusts, err := findInDir(dstDir)
+	dstKusts, err := findKustInDir(dstDir)
 	if err != nil {
 		return comparisonList{}, fmt.Errorf("error comparing directories: %v", err)
 	}
@@ -152,7 +154,7 @@ func compareDirs(srcDir, dstDir string) (comparisonList, error) {
 	return compareMaps(srcMap, dstMap), nil
 }
 
-func findInDir(dirPath string) ([]fluxKust, error) {
+func findKustInDir(dirPath string) ([]fluxKust, error) {
 	fk := []fluxKust{}
 
 	err := filepath.WalkDir(dirPath, func(p string, d fs.DirEntry, err error) error {
@@ -283,9 +285,29 @@ func compareMaps(srcMap, dstMap map[string]fluxKust) comparisonList {
 	return c
 }
 
-func kustomizeBuild(dirPath string) (string, error) {
-	if dirPath == "" {
-		return "", nil
+func kustomizeBuild(baseDir, kustDir string) (string, error) {
+	// Initially assume input paths are not relative to repo root
+	dirPath := filepath.Join(baseDir, kustDir)
+
+	// It might already be known better
+	if pathRelToRepoRoot {
+		dirPath = kustDir
+	}
+
+	// Try both treating input path as relative to repo root and not
+	_, err := os.ReadDir(dirPath)
+	if err != nil {
+		if pathRelToRepoRoot {
+			return "", err
+		}
+
+		dirPath = kustDir
+		_, err := os.ReadDir(dirPath)
+		if err != nil {
+			return "", err
+		}
+
+		pathRelToRepoRoot = true
 	}
 
 	kustomizer := krusty.MakeKustomizer(krusty.MakeDefaultOptions())

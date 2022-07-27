@@ -12,7 +12,7 @@ module.exports = async ({ github, context, npmCore, npmDiff, npmChalk, diffable,
       repo: context.repo.repo,
       body: markdownDiffWithHeader
     })
-  
+
     return colorizeDiff(diff[0], npmChalk)
   }
 
