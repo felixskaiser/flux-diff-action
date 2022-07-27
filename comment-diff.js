@@ -1,4 +1,4 @@
-module.exports = async ({ github, context, npmDiff, npmChalk, diffable, outputType, outputFormat }) => {
+module.exports = async ({ github, context, npmCore, npmDiff, npmChalk, diffable, outputType }) => {
   const d = JSON.parse(diffable)
 
   const diff = makeDiff(npmDiff, d)
@@ -12,14 +12,16 @@ module.exports = async ({ github, context, npmDiff, npmChalk, diffable, outputTy
       repo: context.repo.repo,
       body: markdownDiffWithHeader
     })
+  
+    return colorizeDiff(diff[0], npmChalk)
   }
 
-  if (outputFormat === 'markdown') {
-    if (diff[1] === '') {
-      return ''
-    }
+  if (outputType === 'job_summary' && diff[1] !== '') {
+    await npmCore.summary
+    .this.addRaw(markdownDiffWithHeader).addEOL()
+    .write()
 
-    return markdownDiffWithHeader
+    return colorizeDiff(diff[0], npmChalk)
   }
 
   return colorizeDiff(diff[0], npmChalk)
