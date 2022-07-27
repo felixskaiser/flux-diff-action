@@ -46,9 +46,9 @@ function makeDiff (npmDiff, diffable) {
       markdownDiff += '<details>\n  <summary>diff: ' +
                       mapping.srcPath + ' | ' +
                       mapping.dstPath +
-                      '</summary>\n\n\\`\\`\\`diff\n' +
+                      '</summary>\n\n```diff\n' +
                       diff +
-                      '\\`\\`\\`\n</details>\n'
+                      '```\n</details>\n'
     }
   }
 
