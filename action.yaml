@@ -16,8 +16,7 @@ inputs:
 
   output_type:
     description: |
-      How to output the diff.
-      Default is Action output only.
+      How to output the diff. Default is Action output only.
       Set to 'pr_comment' to comment diff on PR in markdown format.
       Set to 'job_summary' to add output to workflow job summary in markdown format.
     required: false
