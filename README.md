@@ -1,23 +1,29 @@
-# flux-diff-action
+# Diff Flux Kustomizations
 
-[![GitHub Super-Linter](https://github.com/felixskaiser/flux-diff-action/workflows/GitHub%20Super-Linter/badge.svg)](https://github.com/marketplace/actions/super-linter) [![Example](https://github.com/felixskaiser/flux-diff-action/workflows/Example/badge.svg)](https://github.com/felixskaiser/flux-diff-action/actions/workflows/example.yaml)
+[![GitHub Super-Linter](https://github.com/felixskaiser/flux-diff-action/workflows/GitHub%20Super-Linter/badge.svg)](https://github.com/marketplace/actions/super-linter)
+[![Example](https://github.com/felixskaiser/flux-diff-action/workflows/Example/badge.svg)](https://github.com/felixskaiser/flux-diff-action/actions/workflows/example.yaml)
 
 A [GitHub Action](https://docs.github.com/en/actions) to find [Flux2](https://fluxcd.io/docs/) [Kustomizations](https://fluxcd.io/docs/components/kustomize/kustomization/) in two directories and get the diff between the built manifests.
 
 ## Usage Examples
+
+Check out the live [example workflow](https://github.com/felixskaiser/flux-diff-action/actions/workflows/example.yaml).
 
 ### `on: push` with Job Summary
 
 ```yaml
 name: Flux Kustomize Diff
 
-on: push
+on:
+  push:
+    branches-ignore:
+      - 'main'
 
 jobs:
-  diff-flux-kustomizations:
+  flux-diff:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout default branch
+      - name: Checkout main branch
         uses: actions/checkout@v3
         with:
           ref: main
@@ -33,11 +39,7 @@ jobs:
         with:
           src_path: main_branch
           dst_path: current_branch
-          output_format: markdown
-
-      # Use single quotes ('') to prevent command substitution because of backticks (```)
-      - name: Add to job summary
-        run: echo '${{ steps.diff_flux_kustomizations.outputs.diff }}' >> "$GITHUB_STEP_SUMMARY"
+          output_type: job_summary
 ```
 
 ### `on: pull_request` with PR comment
@@ -45,29 +47,56 @@ jobs:
 ```yaml
 name: Flux Kustomize Diff
 
-on: pull_request
+on:
+  pull_request:
+    branches: [main]
 
 jobs:
-  diff-flux-kustomizations:
+  flux-diff:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout base branch
+      - name: Checkout main branch
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.base_ref }}
-          path: base_branch
+          ref: main
+          path: main_branch
 
-      - name: Checkout current branch
+      # defaults to PR branch
+      - name: Checkout PR branch
         uses: actions/checkout@v3
         with:
-          path: current_branch
+          path: pr_branch
 
       - name: Diff Flux Kustomizations
         uses: felixskaiser/flux-diff-action@main
         with:
-          src_path: base_branch
-          dst_path: current_branch
+          src_path: main_branch
+          dst_path: pr_branch
           output_type: pr_comment
+```
+
+### Compare directories
+
+```yaml
+name: Flux Kustomize Diff
+
+on: push
+
+jobs:
+  flux-diff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout base branch
+        uses: actions/checkout@v3
+
+      - id: diff_flux_kustomizations
+        uses: felixskaiser/flux-diff-action@main
+        with:
+          src_path: clusters/production
+          dst_path: clusters/staging
+
+      - name: Do something with output
+        run: echo "${{ steps.diff_flux_kustomizations.outputs.diff }}"
 ```
 
 ## Inputs
@@ -76,17 +105,11 @@ jobs:
 
 - `dst_path` - (required) Path to the destination directory.
 
-- `output_type` - (optional) How to output the diff.
+- `output_type` - (optional) How to output the diff.  Default is Action output only.
 
-  Default is Action output only. Set to `pr_comment` to comment diff on PR.
+    Set to `pr_comment` to comment diff on PR in markdown format. The PR to comment is derived from workflow context.
 
-  Input `output_type: pr_comment` implies input `output_format: markdown`.
-
-- `output_format` - (optional) The format with which to output the diff.
-
-  Default is colored stdout. Set to `markdown` to get output without color, prefix \`\`\`diff and suffix \`\`\`.
-
-  Input `output_type: pr_comment` implies input `output_format: markdown`.
+    Set to `job_summary` to add diff to the workflow job summary in markdown format.
 
 ## Outputs
 

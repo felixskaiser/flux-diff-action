@@ -16,19 +16,9 @@ inputs:
 
   output_type:
     description: |
-      How to output the diff.
-      Default is Action output only.
-      Set to 'pr_comment' to comment diff on PR.
-      Input 'output_type: pr_comment' implies input 'output_format: markdown'.
-    required: false
-    default: ""
-
-  output_format:
-    description: |
-      The format with which to output the diff.
-      Default is colored stdout.
-      Set to 'markdown' to get output without color, prefix '```diff' and suffix '```'.
-      Input 'output_type: pr_comment' implies input 'output_format: markdown'.
+      How to output the diff. Default is Action output only.
+      Set to 'pr_comment' to comment diff on PR in markdown format.
+      Set to 'job_summary' to add output to workflow job summary in markdown format.
     required: false
     default: ""
 
@@ -40,28 +30,25 @@ outputs:
 runs:
   using: composite
   steps:
+    # TODO: check if Linux runner with X64 arch
+    # TODO: if output_type: pr_comment, check if PR event
     - id: input_to_env
       shell: bash
       run: |
+        echo "ACTION_PATH=${{ github.action_path }}" >> $GITHUB_ENV
         echo "INPUT_SRC_PATH=${{ inputs.src_path }}" >> $GITHUB_ENV
         echo "INPUT_DST_PATH=${{ inputs.dst_path }}" >> $GITHUB_ENV
         echo "INPUT_OUTPUT_TYPE=${{ inputs.output_type }}" >> $GITHUB_ENV
-        echo "INPUT_OUTPUT_FORMAT=${{ inputs.output_format }}" >> $GITHUB_ENV
-
-    - id: setup_go
-      uses: actions/setup-go@v3
-      with:
-       go-version-file: ${{ env.GITHUB_ACTION_PATH }}go.mod
 
     - id: get_diffable
       shell: bash
       run: |
-        diffable=$(go run $GITHUB_ACTION_PATH/get-diffable.go --src=$INPUT_SRC_PATH --dst=$INPUT_DST_PATH)
+        diffable=$($ACTION_PATH/bin/get-diffable --src=$INPUT_SRC_PATH --dst=$INPUT_DST_PATH)
         echo "::set-output name=result::$diffable"
 
     - id: npm_install
       shell: bash
-      run: npm i $GITHUB_ACTION_PATH --production
+      run: cd $ACTION_PATH && npm i --omit=dev
 
     - id: get_diff
       uses: actions/github-script@v6
@@ -70,13 +57,13 @@ runs:
       with:
         result-encoding: string
         script: |
-          const npmDiff = require('diff');
-          const npmChalk = require('chalk');
+          const action_path = process.env.ACTION_PATH
+          const diffable = process.env.DIFFABLE
+          const outputType = process.env.INPUT_OUTPUT_TYPE
 
-          const action_path = process.env.GITHUB_ACTION_PATH;
-          const diffable = process.env.DIFFABLE;
-          const outputType = process.env.INPUT_OUTPUT_TYPE;
-          const outputFormat = process.env.INPUT_OUTPUT_FORMAT;
+          const npmCore = require(action_path + '/node_modules/@actions/core');
+          const npmDiff = require(action_path + '/node_modules/diff')
+          const npmChalk = require(action_path + '/node_modules/chalk')
+          const script = require(action_path + '/comment-diff.js')
 
-          const script = require(action_path + 'comment-diff.js');
-          return await script({github, context, npmDiff, npmChalk, diffable, outputType, outputFormat});
+          return await script({github, context, npmCore, npmDiff, npmChalk, diffable, outputType})
