@@ -57,7 +57,7 @@ runs:
 
     - id: npm_install
       shell: bash
-      run: npm i $ACTION_PATH --omit=dev --loglevel verbose
+      run: npm i $ACTION_PATH --prefix $ACTION_PATH/node_modules --omit=dev --loglevel verbose
 
     - id: get_diff
       uses: actions/github-script@v6
