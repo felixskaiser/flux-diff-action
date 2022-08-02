@@ -6,7 +6,7 @@ require (
 	github.com/fluxcd/kustomize-controller/api v0.26.3
 	github.com/spf13/pflag v1.0.5
 	sigs.k8s.io/kustomize/api v0.11.5
-	sigs.k8s.io/kustomize/kyaml v0.13.7
+	sigs.k8s.io/kustomize/kyaml v0.13.9
 	sigs.k8s.io/yaml v1.3.0
 )
 
